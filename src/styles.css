@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Small UX tweaks for prototype */
+::selection {
+  background: rgba(99, 102, 241, 0.35);
+}
+
