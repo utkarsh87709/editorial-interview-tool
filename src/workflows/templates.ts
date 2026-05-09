@@ -1,4 +1,4 @@
-export type Topic = { id: string; label: string };
+export type Topic = { id: string; label: string; helper?: string };
 
 export type InterviewTemplate = {
   id: TemplateId;
