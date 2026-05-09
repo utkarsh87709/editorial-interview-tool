@@ -26,6 +26,7 @@ type PersistedState = {
   fields: FormFields;
   researchByTopicId: Record<string, string>;
   questions: { text: string; selected: boolean }[];
+  apiKey: string;
 };
 
 function safeJsonParse<T>(raw: string | null): T | null {
@@ -59,6 +60,7 @@ export function App() {
 
   const [busy, setBusy] = useState<null | "research" | "questions">(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string>("");
 
   useEffect(() => {
     const persisted = safeJsonParse<PersistedState>(localStorage.getItem(STORAGE_KEY));
@@ -66,6 +68,7 @@ export function App() {
     setStage(persisted.stage ?? "research");
     setFields(persisted.fields ?? fields);
     setResearchByTopicId(persisted.researchByTopicId ?? {});
+    setApiKey(persisted.apiKey ?? "");
     setQuestions(
       (persisted.questions ?? []).map((q, idx) => ({
         id: `q_${idx + 1}`,
@@ -81,10 +84,11 @@ export function App() {
       stage,
       fields,
       researchByTopicId,
-      questions: questions.map((q) => ({ text: q.text, selected: q.selected }))
+      questions: questions.map((q) => ({ text: q.text, selected: q.selected })),
+      apiKey
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
-  }, [stage, fields, researchByTopicId, questions]);
+  }, [stage, fields, researchByTopicId, questions, apiKey]);
 
   useEffect(() => {
     if (!toast) return;
@@ -109,9 +113,10 @@ export function App() {
     fields.countryInFocus.trim() &&
     fields.publication.trim() &&
     fields.mediaPartnerCountry.trim() &&
+    apiKey.trim() &&
     busy === null;
 
-  const canGenerateQuestions = Boolean(template) && researchItems.some((r) => r.text.trim().length > 0) && busy === null;
+  const canGenerateQuestions = Boolean(template) && researchItems.some((r) => r.text.trim().length > 0) && apiKey.trim() && busy === null;
 
   async function onGenerateResearch() {
     if (!template) return;
@@ -119,7 +124,8 @@ export function App() {
     try {
       const out = await generateResearch({
         fields,
-        template
+        template,
+        apiKey
       });
       setResearchByTopicId((prev) => {
         const next = { ...prev };
@@ -141,7 +147,8 @@ export function App() {
       const out = await generateQuestions({
         fields,
         template,
-        research: researchItems.map((r) => ({ topicId: r.topicId, label: r.label, text: r.text }))
+        research: researchItems.map((r) => ({ topicId: r.topicId, label: r.label, text: r.text })),
+        apiKey
       });
       setQuestions(
         out.map((q, idx) => ({
@@ -287,6 +294,15 @@ export function App() {
                   className="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-3 py-3 text-sm outline-none text-slate-200 placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-colors"
                   value={fields.mediaPartnerCountry}
                   onChange={(e) => setFields((p) => ({ ...p, mediaPartnerCountry: e.target.value }))}
+                />
+              </Field>
+              <Field label="Claude API Key">
+                <input
+                  type="password"
+                  className="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-3 py-3 text-sm outline-none text-slate-200 placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-colors"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-ant-api03-..."
                 />
               </Field>
             </div>

@@ -16,8 +16,10 @@ export type ResearchOut = { topicId: string; text: string };
 export async function generateResearch(opts: {
   fields: Fields;
   template: InterviewTemplate;
+  apiKey: string;
 }): Promise<ResearchOut[]> {
-  if (!apiKey) throw new Error("VITE_ANTHROPIC_API_KEY not set");
+  const apiKey = opts.apiKey;
+  if (!apiKey) throw new Error("Claude API key is required");
 
   const prompt = buildResearchPrompt(opts.fields, opts.template.topics);
   const responseText = await anthropicMessages(apiKey, prompt);
@@ -35,8 +37,10 @@ export async function generateQuestions(opts: {
   fields: Fields;
   template: InterviewTemplate;
   research: Array<{ topicId: string; label: string; text: string }>;
+  apiKey: string;
 }): Promise<string[]> {
-  if (!apiKey) throw new Error("VITE_ANTHROPIC_API_KEY not set");
+  const apiKey = opts.apiKey;
+  if (!apiKey) throw new Error("Claude API key is required");
 
   const prompt = buildQuestionsPrompt(opts.fields, opts.template.topics, opts.template.qFocuses, opts.research);
   const responseText = await anthropicMessages(apiKey, prompt);
