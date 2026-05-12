@@ -133,6 +133,8 @@ export async function anthropicMessages(
     }
     throw new Error(msg);
   }
+
+  throw new Error(lastErr || "Anthropic request failed after retries.");
 }
 
 function truncateForQuestionsPrompt(text: string, maxChars: number): string {
