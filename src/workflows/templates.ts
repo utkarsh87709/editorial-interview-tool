@@ -5,6 +5,8 @@ export type InterviewTemplate = {
   label: string;
   topics: Topic[];
   qFocuses: string[];
+  /** Zero-based indices into topics/qFocuses for the 8 generated questions. Default first 8. */
+  questionTopicIndices?: number[];
 };
 
 export type TemplateId = "company" | "minister" | "president" | "trade";
@@ -20,6 +22,7 @@ const TEMPLATES: InterviewTemplate[] = [
   {
     id: "company",
     label: "Company Executive",
+    questionTopicIndices: [0, 1, 2, 3, 4, 5, 6, 8],
     topics: [
       { id: "t1", label: "Leader's role, vision, recent quote, recent news" },
       { id: "t2", label: "Market perception / reputation management" },
@@ -76,6 +79,8 @@ const TEMPLATES: InterviewTemplate[] = [
   {
     id: "president",
     label: "President / Prime Minister / Ambassador",
+    /** Eight questions: national vision through growth, then export and international perception (Template C order; innovation topic researched but not asked). */
+    questionTopicIndices: [0, 1, 2, 3, 4, 5, 7, 8],
     topics: [
       { id: "t1", label: "Vision and major national decisions shaping economic direction" },
       { id: "t2", label: "Bilateral relations with the media partner country" },

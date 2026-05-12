@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { TemplateId, getTemplateById, templateOptions } from "../workflows/templates";
 import { generateResearch, generateQuestions } from "../workflows/generator";
 import { downloadTextFile } from "../workflows/export";
-import { cls } from "./cls";
 
 type Stage = "research" | "questions";
 
@@ -27,6 +26,7 @@ type PersistedState = {
   researchByTopicId: Record<string, string>;
   questions: { text: string; selected: boolean }[];
   apiKey: string;
+  legalFlag?: string | null;
 };
 
 function safeJsonParse<T>(raw: string | null): T | null {
@@ -56,6 +56,7 @@ export function App() {
   }, [fields.typeId]);
 
   const [researchByTopicId, setResearchByTopicId] = useState<Record<string, string>>({});
+  const [legalFlag, setLegalFlag] = useState<string | null>(null);
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
 
   const [busy, setBusy] = useState<null | "research" | "questions">(null);
@@ -68,6 +69,7 @@ export function App() {
     setStage(persisted.stage ?? "research");
     setFields(persisted.fields ?? fields);
     setResearchByTopicId(persisted.researchByTopicId ?? {});
+    setLegalFlag(persisted.legalFlag ?? null);
     setApiKey(persisted.apiKey ?? "");
     setQuestions(
       (persisted.questions ?? []).map((q, idx) => ({
@@ -85,10 +87,11 @@ export function App() {
       fields,
       researchByTopicId,
       questions: questions.map((q) => ({ text: q.text, selected: q.selected })),
-      apiKey
+      apiKey,
+      legalFlag
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
-  }, [stage, fields, researchByTopicId, questions, apiKey]);
+  }, [stage, fields, researchByTopicId, questions, apiKey, legalFlag]);
 
   useEffect(() => {
     if (!toast) return;
@@ -129,9 +132,10 @@ export function App() {
       });
       setResearchByTopicId((prev) => {
         const next = { ...prev };
-        for (const item of out) next[item.topicId] = item.text;
+        for (const item of out.research) next[item.topicId] = item.text;
         return next;
       });
+      setLegalFlag(out.legalFlag);
       setToast("Research generated. Review/edit freely.");
     } catch (e) {
       setToast(e instanceof Error ? e.message : "Failed to generate research.");
@@ -151,12 +155,13 @@ export function App() {
         apiKey
       });
       setQuestions(
-        out.map((q, idx) => ({
+        out.questions.map((q, idx) => ({
           id: `q_${idx + 1}`,
           text: q,
           selected: true
         }))
       );
+      setLegalFlag(out.legalFlag ?? null);
       setStage("questions");
       setToast("Questions generated. Edit/select then export.");
     } catch (e) {
@@ -176,7 +181,8 @@ export function App() {
     const kept = questions.filter((q) => q.selected).map((q) => q.text.trim()).filter(Boolean);
     const header = `${fields.publication} — Interview Questions\n${fields.name} (${fields.title}, ${fields.org})\nCountry in focus: ${fields.countryInFocus}\nMedia partner country: ${fields.mediaPartnerCountry}\n\n`;
     const body = kept.map((q, idx) => `${idx + 1}. ${q}`).join("\n\n");
-    return header + (body || "(No questions selected)");
+    const legal = legalFlag?.trim() ? `\n\n---\nLegal / regulatory / reputational note (AI scan): ${legalFlag.trim()}` : "";
+    return header + (body || "(No questions selected)") + legal;
   }
 
   function onDownloadTxt() {
@@ -197,7 +203,9 @@ export function App() {
       mediaPartnerCountry: ""
     });
     setResearchByTopicId({});
+    setLegalFlag(null);
     setQuestions([]);
+    setLegalFlag(null);
     setToast("Reset prototype state.");
   }
 
@@ -333,6 +341,13 @@ export function App() {
                   </div>
                 </div>
 
+                {legalFlag ? (
+                  <div className="mb-6 rounded-xl border border-amber-700/40 bg-amber-950/25 px-4 py-3 text-sm text-slate-200">
+                    <div className="font-semibold text-amber-200/95 mb-1">Legal / regulatory / reputational scan</div>
+                    <div className="whitespace-pre-wrap leading-relaxed">{legalFlag}</div>
+                  </div>
+                ) : null}
+
                 <div className="space-y-4">
                   {!template ? (
                     <EmptyCard title="Select a Type" body="Choosing a type loads the correct research topics and writing rules." />
@@ -420,6 +435,13 @@ export function App() {
                     ))
                   )}
                 </div>
+
+                {legalFlag ? (
+                  <div className="mt-4 rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-100/90">
+                    <div className="font-semibold text-amber-200/95 mb-1">Legal / regulatory / reputational scan</div>
+                    <div className="text-amber-100/85">{legalFlag}</div>
+                  </div>
+                ) : null}
               </>
             )}
           </div>
